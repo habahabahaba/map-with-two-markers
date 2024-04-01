@@ -1,6 +1,7 @@
 /// <reference types="@types/google.maps" />
 
-interface GoogleLibs {
+export interface GoogleLibsInterface {
+  MapsLib: typeof google.maps;
   Map: typeof google.maps.Map;
   AdvancedMarkerElement: typeof google.maps.marker.AdvancedMarkerElement;
   PinElement: typeof google.maps.marker.PinElement;
@@ -13,6 +14,14 @@ interface GoogleLibs {
 //   typeof google.maps.marker.PinElement,
 //   typeof google.maps.LatLngBounds
 // ];
+
+async function loadGoogleMapsLib(): Promise<typeof maps> {
+  const maps = (await google.maps.importLibrary(
+    'maps'
+  )) as google.maps.MapsLibrary;
+
+  return maps;
+}
 
 async function loadGoogleMap(): Promise<typeof Map> {
   const { Map } = (await google.maps.importLibrary(
@@ -46,21 +55,40 @@ async function loadGoogleBounds(): Promise<typeof LatLngBounds> {
   return LatLngBounds;
 }
 
-const googleMapsLibraries: GoogleLibs | void = await Promise.all([
+const googleMapsLibraries: GoogleLibsInterface | void = await Promise.all([
+  loadGoogleMapsLib(),
   loadGoogleMap(),
   loadGoogleMarker(),
   loadGooglePin(),
   loadGoogleBounds(),
 ])
   .then((tuple) => ({
-    Map: tuple[0],
-    AdvancedMarkerElement: tuple[1],
-    PinElement: tuple[2],
-    LatLngBounds: tuple[3],
+    Map: tuple[1],
+    AdvancedMarkerElement: tuple[2],
+    PinElement: tuple[3],
+    LatLngBounds: tuple[4],
   }))
   .catch((err) => console.error(err));
 
-export default googleMapsLibraries;
+export async function loadGoogleLibraries(): Promise<GoogleLibsInterface | void> {
+  const googleMapsLibraries: GoogleLibsInterface | void = await Promise.all([
+    loadGoogleMapsLib(),
+    loadGoogleMap(),
+    loadGoogleMarker(),
+    loadGooglePin(),
+    loadGoogleBounds(),
+  ])
+    .then((tuple) => ({
+      MapsLib: tuple[0],
+      Map: tuple[1],
+      AdvancedMarkerElement: tuple[2],
+      PinElement: tuple[3],
+      LatLngBounds: tuple[4],
+    }))
+    .catch((err) => console.error(err));
+
+  return googleMapsLibraries;
+}
 
 // interface GooleMapsLibraries {
 //   Map: typeof google.maps.Map;

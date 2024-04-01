@@ -1,8 +1,8 @@
 // Google Maps:
-import googleMapsLibraries from './googleMapDependencies';
-
-const { Map, AdvancedMarkerElement, PinElement, LatLngBounds } =
-  googleMapsLibraries!;
+import {
+  GoogleLibsInterface,
+  loadGoogleLibraries,
+} from './googleMapDependencies';
 
 interface position {
   lat: number;
@@ -24,15 +24,37 @@ interface markerOptions {
 }
 
 export default class CustomMap {
-  private googleMap: google.maps.Map;
-  constructor(
+  static async createInstance(
     DivElement: HTMLElement,
     position: position = {
       lat: 0,
       lng: 0,
     },
     zoom: number = 6
+  ): Promise<CustomMap | void> {
+    const googleLibraries: GoogleLibsInterface | void =
+      await loadGoogleLibraries();
+    if (!googleLibraries) throw new Error('Failed to load Google Maps!!!');
+    console.log('from createInstance');
+    return new CustomMap(DivElement, position, zoom, googleLibraries);
+  }
+
+  private constructor(
+    DivElement: HTMLElement,
+    position: position = {
+      lat: 0,
+      lng: 0,
+    },
+    zoom: number = 6,
+    googleLibraries: GoogleLibsInterface
   ) {
+    this.googleLibraries = googleLibraries!;
+    console.log(this.googleLibraries);
+
+    if (!this.googleLibraries)
+      throw new Error('Please use the createInstance method instead.');
+
+    const { Map, LatLngBounds } = this.googleLibraries;
     this.googleMap = new Map(DivElement, {
       zoom: zoom,
       center: position,
@@ -43,8 +65,11 @@ export default class CustomMap {
     this.markers = [];
   }
 
-  protected markers: google.maps.marker.AdvancedMarkerElement[];
-  protected bounds: google.maps.LatLngBounds;
+  protected googleLibraries: GoogleLibsInterface | undefined;
+
+  private googleMap: GoogleLibsInterface['Map'] | undefined;
+  protected markers: GoogleLibsInterface['AdvancedMarkerElement'][] | undefined;
+  protected bounds: GoogleLibsInterface['LatLngBounds'] | undefined;
 
   protected fitToBounds(
     bounds: google.maps.LatLngBounds,
@@ -54,37 +79,43 @@ export default class CustomMap {
   }
 
   placeMarkerOn({ target, label, color }: markerOptions): void {
-    // For bold outlined text:
-    const element = document.createElement('h3');
-    element.style.webkitTextStroke = '0.4px black';
-    element.textContent = label || null;
+    setTimeout(() => {
+      console.log(this.googleLibraries);
+      const { AdvancedMarkerElement, PinElement, MapsLib } =
+        this.googleLibraries!;
 
-    // Ceating pin:
-    const pinScaled = new PinElement({
-      scale: 1.5,
-      background: color,
-      borderColor: 'black',
-      glyphColor: 'white',
-      glyph: element,
-    });
+      // For bold outlined text:
+      const element = document.createElement('h3');
+      element.style.webkitTextStroke = '0.4px black';
+      element.textContent = label || null;
 
-    const marker = new AdvancedMarkerElement({
-      map: this.googleMap,
-      position: target.position,
-      content: pinScaled.element,
-    });
+      // Ceating pin:
+      const pinScaled = new PinElement({
+        scale: 1.5,
+        background: color,
+        borderColor: 'black',
+        glyphColor: 'white',
+        glyph: element,
+      });
 
-    const infoWindow = new google.maps.InfoWindow({
-      content: target.getMarkerContent(),
-    });
+      const marker = new AdvancedMarkerElement({
+        map: this.googleMap,
+        position: target.position,
+        content: pinScaled.element,
+      });
 
-    marker.addListener('click', () => {
-      infoWindow.open(this.googleMap, marker);
-    });
+      const infoWindow = new MapsLib.InfoWindow({
+        content: target.getMarkerContent(),
+      });
 
-    // Fitting all markers on the screen:
-    this.markers.push(marker);
-    this.bounds.extend(marker.position!);
-    this.fitToBounds(this.bounds);
+      marker.addListener('click', () => {
+        infoWindow.open(this.googleMap, marker);
+      });
+
+      // Fitting all markers on the screen:
+      this.markers!.push(marker);
+      this.bounds!.extend(marker.position!);
+      this.fitToBounds(this.bounds);
+    }, 500);
   }
 }
