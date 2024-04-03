@@ -1,26 +1,35 @@
 /// <reference types="@types/google.maps" />
 
 export interface GoogleLibsInterface {
-  MapsLib: typeof google.maps;
+  MapsLib: google.maps.MapsLibrary;
   Map: typeof google.maps.Map;
   AdvancedMarkerElement: typeof google.maps.marker.AdvancedMarkerElement;
   PinElement: typeof google.maps.marker.PinElement;
   LatLngBounds: typeof google.maps.LatLngBounds;
 }
 
-// type GoogleLibsTuple = [
-//   typeof google.maps.Map,
-//   typeof google.maps.marker.AdvancedMarkerElement,
-//   typeof google.maps.marker.PinElement,
-//   typeof google.maps.LatLngBounds
-// ];
-
-async function loadGoogleMapsLib(): Promise<typeof maps> {
+export async function loadGoogleMapsLibrary(): Promise<google.maps.MapsLibrary> {
   const maps = (await google.maps.importLibrary(
     'maps'
   )) as google.maps.MapsLibrary;
 
   return maps;
+}
+
+export async function loadGoogleCoreLibrary(): Promise<google.maps.CoreLibrary> {
+  const coreLibrary = (await google.maps.importLibrary(
+    'core'
+  )) as google.maps.CoreLibrary;
+
+  return coreLibrary;
+}
+
+export async function loadGoogleMarkerLibrary(): Promise<google.maps.MarkerLibrary> {
+  const MarkerLibrary = (await google.maps.importLibrary(
+    'marker'
+  )) as google.maps.MarkerLibrary;
+
+  return MarkerLibrary;
 }
 
 async function loadGoogleMap(): Promise<typeof Map> {
@@ -56,13 +65,14 @@ async function loadGoogleBounds(): Promise<typeof LatLngBounds> {
 }
 
 const googleMapsLibraries: GoogleLibsInterface | void = await Promise.all([
-  loadGoogleMapsLib(),
+  loadGoogleMapsLibrary(),
   loadGoogleMap(),
   loadGoogleMarker(),
   loadGooglePin(),
   loadGoogleBounds(),
 ])
   .then((tuple) => ({
+    MapsLib: tuple[0],
     Map: tuple[1],
     AdvancedMarkerElement: tuple[2],
     PinElement: tuple[3],
@@ -72,7 +82,7 @@ const googleMapsLibraries: GoogleLibsInterface | void = await Promise.all([
 
 export async function loadGoogleLibraries(): Promise<GoogleLibsInterface | void> {
   const googleMapsLibraries: GoogleLibsInterface | void = await Promise.all([
-    loadGoogleMapsLib(),
+    loadGoogleMapsLibrary(),
     loadGoogleMap(),
     loadGoogleMarker(),
     loadGooglePin(),

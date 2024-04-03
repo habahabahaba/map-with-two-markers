@@ -1,7 +1,8 @@
 // Google Maps:
 import {
-  GoogleLibsInterface,
-  loadGoogleLibraries,
+  loadGoogleMapsLibrary,
+  loadGoogleCoreLibrary,
+  loadGoogleMarkerLibrary,
 } from './googleMapDependencies';
 
 interface position {
@@ -24,98 +25,107 @@ interface markerOptions {
 }
 
 export default class CustomMap {
-  static async createInstance(
+  private async initMap(
     DivElement: HTMLElement,
     position: position = {
       lat: 0,
       lng: 0,
     },
     zoom: number = 6
-  ): Promise<CustomMap | void> {
-    const googleLibraries: GoogleLibsInterface | void =
-      await loadGoogleLibraries();
-    if (!googleLibraries) throw new Error('Failed to load Google Maps!!!');
-    console.log('from createInstance');
-    return new CustomMap(DivElement, position, zoom, googleLibraries);
-  }
-
-  private constructor(
-    DivElement: HTMLElement,
-    position: position = {
-      lat: 0,
-      lng: 0,
-    },
-    zoom: number = 6,
-    googleLibraries: GoogleLibsInterface
   ) {
-    this.googleLibraries = googleLibraries!;
-    console.log(this.googleLibraries);
-
-    if (!this.googleLibraries)
-      throw new Error('Please use the createInstance method instead.');
-
-    const { Map, LatLngBounds } = this.googleLibraries;
+    const { Map } = await CustomMap.googleLibraries.maps;
+    if (!Map) throw new Error('Failed to load Google Maps!!!');
+    // console.log('from createInstance');
     this.googleMap = new Map(DivElement, {
       zoom: zoom,
       center: position,
       mapId: 'DEMO_MAP_ID', // required for AdvancedMarkerElement;
     });
 
+    const { LatLngBounds } = await CustomMap.googleLibraries.core;
+    if (!LatLngBounds) throw new Error('Failed to load Google Maps!!!');
     this.bounds = new LatLngBounds();
+  }
+
+  constructor(
+    DivElement: HTMLElement,
+    position: position = {
+      lat: 0,
+      lng: 0,
+    },
+    zoom: number = 6
+  ) {
+    this.initMap(DivElement, position, zoom);
     this.markers = [];
   }
 
-  protected googleLibraries: GoogleLibsInterface | undefined;
+  static googleLibraries = {
+    maps: loadGoogleMapsLibrary(),
+    core: loadGoogleCoreLibrary(),
+    marker: loadGoogleMarkerLibrary(),
+  };
 
-  private googleMap: GoogleLibsInterface['Map'] | undefined;
-  protected markers: GoogleLibsInterface['AdvancedMarkerElement'][] | undefined;
-  protected bounds: GoogleLibsInterface['LatLngBounds'] | undefined;
+  private googleMap: google.maps.Map | undefined;
+  private markers: google.maps.marker.AdvancedMarkerElement[];
+  private bounds: google.maps.LatLngBounds | undefined;
 
-  protected fitToBounds(
+  private fitToBounds(
     bounds: google.maps.LatLngBounds,
     padding: number = 15
   ): void {
-    this.googleMap.fitBounds(bounds, padding);
+    this.googleMap!.fitBounds(bounds, padding);
   }
 
-  placeMarkerOn({ target, label, color }: markerOptions): void {
-    setTimeout(() => {
-      console.log(this.googleLibraries);
-      const { AdvancedMarkerElement, PinElement, MapsLib } =
-        this.googleLibraries!;
+  async placeMarkerOn({ target, label, color }: markerOptions) {
+    console.log(CustomMap.googleLibraries);
+    // Loading from Google libraries, (statically cached):
+    const { AdvancedMarkerElement, PinElement } = await CustomMap
+      .googleLibraries.marker;
+    const { InfoWindow } = await CustomMap.googleLibraries.maps;
+    if (!AdvancedMarkerElement || !PinElement || !InfoWindow)
+      throw new Error(
+        'There was a problem with loading from Google Libraries!'
+      );
 
-      // For bold outlined text:
-      const element = document.createElement('h3');
-      element.style.webkitTextStroke = '0.4px black';
-      element.textContent = label || null;
+    // For bold outlined text:
+    const element = document.createElement('h3');
+    element.style.webkitTextStroke = '0.4px black';
+    element.textContent = label || null;
 
-      // Ceating pin:
-      const pinScaled = new PinElement({
-        scale: 1.5,
-        background: color,
-        borderColor: 'black',
-        glyphColor: 'white',
-        glyph: element,
-      });
+    // Ceating pin:
+    const pinScaled = new PinElement({
+      scale: 1.5,
+      background: color,
+      borderColor: 'black',
+      glyphColor: 'white',
+      glyph: element,
+    });
 
-      const marker = new AdvancedMarkerElement({
+    // Creating new marker:
+    const marker: google.maps.marker.AdvancedMarkerElement =
+      new AdvancedMarkerElement({
         map: this.googleMap,
         position: target.position,
         content: pinScaled.element,
       });
 
-      const infoWindow = new MapsLib.InfoWindow({
-        content: target.getMarkerContent(),
-      });
+    // Creating the pop-up for the marker:
+    const infoWindow = new InfoWindow({
+      content: target.getMarkerContent(),
+    });
 
-      marker.addListener('click', () => {
-        infoWindow.open(this.googleMap, marker);
-      });
+    marker.addListener('click', () => {
+      infoWindow.open(this.googleMap, marker);
+    });
 
-      // Fitting all markers on the screen:
-      this.markers!.push(marker);
-      this.bounds!.extend(marker.position!);
-      this.fitToBounds(this.bounds);
-    }, 500);
+    // Fitting all markers on the screen:
+    if (!this.bounds)
+      throw new Error(
+        'There was a problem with loading LatLngBounds from Google libraries!'
+      );
+
+    this.markers.push(marker);
+    this.bounds.extend(marker.position!);
+    this.fitToBounds(this.bounds);
   }
 }
