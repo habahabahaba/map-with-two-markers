@@ -64,21 +64,22 @@ async function loadGoogleBounds(): Promise<typeof LatLngBounds> {
   return LatLngBounds;
 }
 
-const googleMapsLibraries: GoogleLibsInterface | void = await Promise.all([
-  loadGoogleMapsLibrary(),
-  loadGoogleMap(),
-  loadGoogleMarker(),
-  loadGooglePin(),
-  loadGoogleBounds(),
-])
-  .then((tuple) => ({
-    MapsLib: tuple[0],
-    Map: tuple[1],
-    AdvancedMarkerElement: tuple[2],
-    PinElement: tuple[3],
-    LatLngBounds: tuple[4],
-  }))
-  .catch((err) => console.error(err));
+export const googleMapsLibraries: GoogleLibsInterface | void =
+  await Promise.all([
+    loadGoogleMapsLibrary(),
+    loadGoogleMap(),
+    loadGoogleMarker(),
+    loadGooglePin(),
+    loadGoogleBounds(),
+  ])
+    .then((tuple) => ({
+      MapsLib: tuple[0],
+      Map: tuple[1],
+      AdvancedMarkerElement: tuple[2],
+      PinElement: tuple[3],
+      LatLngBounds: tuple[4],
+    }))
+    .catch((err) => console.error(err));
 
 export async function loadGoogleLibraries(): Promise<GoogleLibsInterface | void> {
   const googleMapsLibraries: GoogleLibsInterface | void = await Promise.all([
