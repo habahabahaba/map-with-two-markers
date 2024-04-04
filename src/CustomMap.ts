@@ -77,7 +77,8 @@ export default class CustomMap {
   }
 
   async placeMarkerOn({ target, label, color }: markerOptions) {
-    console.log(CustomMap.googleLibraries);
+    // console.log(CustomMap.googleLibraries);
+
     // Loading from Google libraries, (statically cached):
     const { AdvancedMarkerElement, PinElement } = await CustomMap
       .googleLibraries.marker;
